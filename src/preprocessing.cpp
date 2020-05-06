@@ -46,11 +46,3 @@ void read(string const path){
 
     file.open(path);
 }
-
-int main(int argc, char const *argv[]){
-    string path = "./data/semeion.data";
-    //read_dataset("./data/semeion.data");
-    read(path);
-    
-    return 0;
-}
