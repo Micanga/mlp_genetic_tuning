@@ -1,5 +1,6 @@
 #include <iostream> // input/output
 #include <fstream>	// manipulação de arquivos
+#include <vector>
 
 /*
 Para informações detalhadas do conjunto de dados: /data/semeion.names
@@ -20,33 +21,40 @@ Y_train Y_test
 using namespace std;
 
 class Data{
+private:
 	string const path_data;
 	int const feature_size, target_size, samples;
 
+	// → Private Methods
+	void read_dataset();
+	void allocation_X_y();
+
 public:
-	int const **X;
-	int const **Y;
+	vector<vector<int>> X, y;
 
 	// → Constructors
-	Data(int feture_size, int target_size, int samples):
-		feature_size{feature_size}, target_size{target_size}, samples{samples}{}
+	Data(int feature_size, int target_size, int samples):
+		feature_size{feature_size}, target_size{target_size}, samples{samples}{allocation_X_y();}
 
-	Data(string path_data, int feture_size, int target_size, int samples):
-		path_data{path_data}, feature_size{feature_size}, target_size{target_size}, samples{samples}{}
+	Data(string path_data, int feature_size, int target_size, int samples):
+		path_data{path_data}, feature_size{feature_size}, target_size{target_size}, samples{samples}{
+			allocation_X_y();
+			//read_dataset();
+		}
 
 	// → Public Methods
 	string get_path();
-	void read_dataset(string path_data, int feture_size, int target_size, int samples);
+	//vector<vector<int>> get_X();
+	//vector<vector<int>> get_y();
 };
 
 string Data::get_path() { return path_data; }
+//vector<vector<int>> Data::get_X() { return X; }
+//vector<vector<int>> Data::get_y() { return y; }
 
-void Data::read_dataset(string path_data, int feture_size, int target_size, int samples){
+void Data::read_dataset(){
 	int i, row, col;
 	string sample;
-
-	int X[samples][feture_size];
-	int Y[samples][target_size];
 
 	ifstream file(path_data); // construtor acossiado ao arquivo
 
@@ -54,11 +62,11 @@ void Data::read_dataset(string path_data, int feture_size, int target_size, int 
 		while (getline(file, sample)){ // método do iostream que retorna a primeira linha do buffer e armazena na string destino
 			row = 0;
 
-			for (i = 0, col = 0; i < sample.length() & col < feture_size; i += 7, col++)
+			for (i = 0, col = 0; i < sample.length() & col < feature_size; i += 7, col++)
 				X[row][col] = (int)sample[i] - 48;
 
 			for (col = 0; i < sample.length() & col < target_size; i += 2, col++)
-				Y[row][col] = (int)sample[i] - 48;
+				y[row][col] = (int)sample[i] - 48;
 
 			row++;
 		}
@@ -68,15 +76,42 @@ void Data::read_dataset(string path_data, int feture_size, int target_size, int 
 	file.close();
 }
 
-int main(int argc, char const *argv[])
-{
+//void Data::allocation_X_y(){
+//	X.resize(samples);
+//	y.resize(samples);
+//
+//	for(int i=0; i<samples;i++){
+//		X[i].resize(feature_size);
+//		y[i].resize(target_size);
+//	}
+//}
+
+void Data::allocation_X_y(){
+	vector<vector<int>> Xx(samples);
+	vector<vector<int>> yy(samples);
+
+	for(int i=0; i<samples;i++){
+		Xx[i].resize(feature_size);
+		yy[i].resize(target_size);
+	}
+
+	Data::X=Xx;
+	Data::y=yy;
+}
+
+
+int main(int argc, char const *argv[]){
 	string path = "./data/semeion.data";
-	//read_dataset("./data/semeion.data",1592,256,1592,10);
-	//read(path);
 
 	Data data = Data(path,256,10,1592);
 
-	cout << data.get_path();
+	cout << data.get_path() << '\n';
+	cout << data.X[0][30] << '\n';
+
+	static int x;
+
+	x=2;
+	x=3;
 
 	return 0;
 }

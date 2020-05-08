@@ -10,5 +10,5 @@ run:
 	@./bin/preprocessing.bin
 
 clean:
-	@echo "\n\nCleaning up..."
+	@echo "\nCleaning up..."
 	@rm ./bin/*.bin	
