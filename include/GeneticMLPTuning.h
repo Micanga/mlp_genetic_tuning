@@ -47,6 +47,10 @@ class GeneticMLPTuning {
 		vector<string> get_activation_options();
 
 		void init_population();
+		vector<MLPParameters *> select_parents();
+		void crossover();
+		void mutate();
+		void run();
 
 		void configuration();
 		void show_population();

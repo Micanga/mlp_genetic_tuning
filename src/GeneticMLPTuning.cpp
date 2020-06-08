@@ -99,6 +99,35 @@ void GeneticMLPTuning::init_population(){
 	cout << "\r|||||||||| 100%\n"; 
 };
 
+vector<MLPParameters *> GeneticMLPTuning::select_parents(){
+	cout << "Selecting the parents...\n";
+	vector<MLPParameters *> parents;
+	return parents;
+};
+
+void GeneticMLPTuning::crossover(){
+	cout << "Crossing over...\n";
+};
+
+void GeneticMLPTuning::mutate(){
+	cout << "Mutating...\n";
+};
+
+void GeneticMLPTuning::run(){
+	// 1. Evaluating the population
+
+	// 2. Select the parents for the next generation
+	vector<MLPParameters *> parents = GeneticMLPTuning::select_parents();
+
+	// 3. Crossing over
+	GeneticMLPTuning::crossover();
+
+	// 4. Mutating
+	GeneticMLPTuning::mutate();
+
+	// 5. Checking the convergence
+};
+
 void GeneticMLPTuning::configuration(){
 	cout << "|#####\n| Genetic MLP Tuner\n|#####\n"; 
 	cout << "| Input Layer Size: " << input_layer_size << '\n';

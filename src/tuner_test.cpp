@@ -29,7 +29,8 @@ int main(){
 	tuner.init_population();
 	//tuner.show_population();
 
-	// . Running some epoch to evaluate the Genetic Algorithm
+	// 4. Running the Genetic Algorithm Tuner
+	tuner.run();
 
 	return 0;
 }
