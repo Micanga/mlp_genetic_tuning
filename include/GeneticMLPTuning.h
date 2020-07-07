@@ -7,8 +7,9 @@
 using namespace std;
 
 struct MLPParameters {
-	vector<int> layers;
+	string layers;
 	string activation_function;
+	int nlayers;
 };
 
 class GeneticMLPTuning {
@@ -48,7 +49,8 @@ class GeneticMLPTuning {
 
 		void init_population();
 		vector<MLPParameters *> select_parents();
-		void crossover();
+		void evaluate();
+		void crossover(vector<MLPParameters *> parents);
 		void mutate();
 		void run();
 
