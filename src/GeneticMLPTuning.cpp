@@ -4,7 +4,10 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h>
+
 #include "GeneticMLPTuning.h"
+
 
 using namespace std;
 
@@ -12,6 +15,9 @@ GeneticMLPTuning::GeneticMLPTuning(int max_e, int pop_size){
 	max_epoch = max_e;
 	population_size = pop_size;
 	mutation_rate = 0.0;
+	epoch = 0;
+	t0 = 0.0;
+	t1 = 0.0;
 	fitness = new float[pop_size];
 };
 
@@ -19,6 +25,9 @@ GeneticMLPTuning::GeneticMLPTuning(int max_e, int pop_size, float mut_rate){
 	max_epoch = max_e;
 	population_size = pop_size;
 	mutation_rate = mut_rate;
+	epoch = 0;
+	t0 = 0.0;
+	t1 = 0.0;
 	fitness = new float[pop_size];
 };
 
@@ -66,7 +75,7 @@ vector<string>  GeneticMLPTuning::get_activation_options(){
 };
 
 void GeneticMLPTuning::init_population(){
-	cout << "| Defining the generator and distributions for the population.\n";
+	cout << "\tDefining the generator and distributions for the population.\n";
 	default_random_engine generator;
 	uniform_int_distribution<int> layer_distribution(min_layers,max_layers);
 	uniform_int_distribution<int> neurons_distribution(min_neurons,max_neurons);
@@ -88,7 +97,7 @@ void GeneticMLPTuning::init_population(){
 		agent->nlayers = number_of_layers;
 		for (int j = 0 ; j < number_of_layers ; j++){
 			int number_of_neurons = neurons_distribution(generator);
-			agent->layers += (','+to_string(number_of_neurons));
+			agent->layers += (','+to_string(int(float(number_of_neurons))));
 		}
 
 		agent->layers += ','+to_string(output_layer_size);
@@ -109,11 +118,9 @@ void GeneticMLPTuning::evaluate(){
     fs.close();
 
 	for (int i = 0 ; i < population_size ; i++){
-		MLPParameters *agent = population[i];
-
-		string command = "python3 src/mlp.py ";
-    	command += agent->layers + ' ';
-		command += agent->activation_function;
+ 		string command = "python3 src/mlp.py ";
+    	command += population[i]->layers + ' ';
+		command += population[i]->activation_function;
     	system(command.c_str());
 	}
 
@@ -122,34 +129,64 @@ void GeneticMLPTuning::evaluate(){
 	ifstream infile("scores.csv");
 	while (infile >> score){
     	fitness[count] = score;
-		cout << count << ' ' << fitness[count] << '\n';
 		count += 1;
 	}
 };
 
-vector<MLPParameters *> GeneticMLPTuning::select_parents(){
+vector<MLPParameters *> GeneticMLPTuning::select_parents(string type){
 	cout << "Selecting the parents...\n";
 	vector<MLPParameters *> parents;
+	t1 = 0.0;
 
-	float sum_of_weight = 0;
-	for(int i=0; i < population_size; i++) {
-		sum_of_weight += fitness[i];
-	}
+	if(type == "random"){
+		float sum_of_weight = 0;
+		for(int i=0; i < population_size; i++) {
+			sum_of_weight += fitness[i];
+		}
 
-	for(int i=0; i < 2; i++){
-		float rnd = static_cast <float> (rand()) 
-			/ (static_cast <float> (RAND_MAX/sum_of_weight));
+		for(int i=0; i < 2; i++){
+			float rnd = static_cast <float> (rand()) 
+				/ (static_cast <float> (RAND_MAX/sum_of_weight));
 
-		float cumm = 0.0;
-		for(int j=0; j<population_size; j++){
-			cumm += fitness[j];
-			if(rnd < cumm){
-				parents.push_back(population[j]);
-				cout << "Parent" << j << ':' << population[j]->layers << '\n';
-				break;
+			float cumm = 0.0;
+			for(int j=0; j<population_size; j++){
+				cumm += fitness[j];
+				if(rnd < cumm){
+					parents.push_back(population[j]);
+					break;
+				}
 			}
 		}
 	}
+	else{if(type == "max"){
+			float max_1 = 0.0;
+			int idx_1 = 0;
+			for(int i=0; i < population_size; i++){
+				if(max_1 < fitness[i]){
+					max_1 = fitness[i];
+					idx_1 = i;
+				}
+			}
+
+			float max_2 = 0.0;
+			int idx_2 = 0;
+			for(int i=0; i < population_size; i++){
+				if(max_2 < fitness[i] and i != idx_1){
+					max_2 = fitness[i];
+					idx_2 = i;
+				}
+			}
+			parents.push_back(population[idx_1]);
+			parents.push_back(population[idx_2]);
+		}
+		else{
+			cout << "ParentsError\n";
+			exit(1);
+		}
+	}
+	for(int i = 0 ; i < population_size ; i++)
+		t1 += fitness[i];
+	t1 /= population_size;
 	return parents;
 };
 
@@ -169,19 +206,24 @@ void GeneticMLPTuning::crossover(vector<MLPParameters *> parents){
 			head2 = rand() % parents[1]->nlayers;
 		}
 
+		agent->nlayers = 0;
 		agent->layers = to_string(input_layer_size);
+		agent->nlayers += 1;
 		string s;
 		size_t pos = 0;
 		string token;
 		string delimiter = ",";
 		int count = 0;
+		int add_layer;
 		if(head1 < head2){
 			count = 0;
 			s = (parents[0]->layers).substr(0,(parents[0]->layers).length());
+			add_layer = parents[0]->nlayers/2;//rand() % parents[0]->nlayers/2;
 			while ((pos = s.find(delimiter)) != string::npos) {
 				token = s.substr(0, pos);
-				if(count >= head1 and count <= head1+(parents[0]->nlayers/2)){
+				if(count >= head1 and count <= head1+(add_layer)){
 					agent->layers += delimiter + token;
+					agent->nlayers += 1;
 				}
 				s.erase(0, pos + delimiter.length());
 				count += 1;
@@ -189,10 +231,12 @@ void GeneticMLPTuning::crossover(vector<MLPParameters *> parents){
 
 			count = 0;
 			s = (parents[1]->layers).substr(0,(parents[1]->layers).length());
+			add_layer = parents[1]->nlayers/2;//rand() % parents[1]->nlayers/2;
 			while ((pos = s.find(delimiter)) != string::npos) {
 				token = s.substr(0, pos);
-				if(count >= head2 and count <= head2+(parents[1]->nlayers/2)){
+				if(count >= head2 and count <= head2+(add_layer)){
 					agent->layers += delimiter + token;
+					agent->nlayers += 1;
 				}
 				s.erase(0, pos + delimiter.length());
 				count += 1;
@@ -201,10 +245,12 @@ void GeneticMLPTuning::crossover(vector<MLPParameters *> parents){
 		else{
 			count = 0;
 			s = (parents[1]->layers).substr(0,(parents[1]->layers).length());
+			add_layer = parents[1]->nlayers/2;//rand() % parents[1]->nlayers/2;
 			while ((pos = s.find(delimiter)) != string::npos) {
 				token = s.substr(0, pos);
-				if(count >= head2 and count <= head2+(parents[1]->nlayers/2)){
+				if(count >= head2 and count <= head2+(add_layer)){
 					agent->layers += delimiter+token;
+					agent->nlayers += 1;
 				}
 				s.erase(0, pos + delimiter.length());
 				count += 1;
@@ -212,27 +258,29 @@ void GeneticMLPTuning::crossover(vector<MLPParameters *> parents){
 
 			count = 0;
 			s = (parents[0]->layers).substr(0,(parents[0]->layers).length());
+			add_layer = parents[0]->nlayers/2;//rand() % parents[0]->nlayers/2;
 			while ((pos = s.find(delimiter)) != string::npos) {
 				token = s.substr(0, pos);
-				if(count >= head1 and count <= head1+(parents[0]->nlayers/2)){
+				if(count >= head1 and count <= head1+(add_layer)){
 					agent->layers += delimiter+token;
+					agent->nlayers += 1;
 				}
 				s.erase(0, pos + delimiter.length());
 				count += 1;
 			}
 		}
 		agent->layers += delimiter+to_string(output_layer_size);
+		agent->nlayers += 1;
 		
 		// defining the activation function
 		float rnd = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 		if(rnd < 0.5){
-			agent->activation_function = parents[0]->activation_function;
+			agent->activation_function = parents[0]->activation_function.substr(0,(parents[0]->activation_function).length()) + '\0';
 		}
 		else{
-			agent->activation_function = parents[1]->activation_function;
+			agent->activation_function = parents[1]->activation_function.substr(0,(parents[1]->activation_function).length()) + '\0';
 		}
 
-		cout << i << ':' << agent->layers << ' ' << agent->activation_function << '\n';
 		population.push_back(agent);
 	}
 	for (int i = 0; i < 2 ; i++)
@@ -241,14 +289,47 @@ void GeneticMLPTuning::crossover(vector<MLPParameters *> parents){
 
 void GeneticMLPTuning::mutate(){
 	cout << "Mutating...\n";
+	unsigned int microseconds = 100000;
+	for (int i = 0 ; i < population_size - 2; i++){		
+		float rnd = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		usleep(microseconds);
+		if(rnd <= mutation_rate){
+			cout << "\t Random\n";
+			MLPParameters *agent = new MLPParameters;
+			default_random_engine generator;
+			uniform_int_distribution<int> layer_distribution(min_layers,max_layers);
+			uniform_int_distribution<int> neurons_distribution(min_neurons,max_neurons);
+			uniform_int_distribution<int> activation_func_distributions(0,(int) activation_functions.size()-1);
+
+
+			// building the layer architecture
+			agent->layers = to_string(input_layer_size);
+
+			int number_of_layers = layer_distribution(generator); 
+			agent->nlayers = number_of_layers;
+			for (int j = 0 ; j < number_of_layers ; j++){
+				int number_of_neurons = neurons_distribution(generator);
+				usleep(microseconds);
+				agent->layers += (','+to_string(int(float(number_of_neurons))));
+			}
+
+			agent->layers += ','+to_string(output_layer_size);
+			
+			// defining the activation function
+			int activation_function_index = activation_func_distributions(generator);
+			agent->activation_function = activation_functions[activation_function_index];
+
+			population[i] = agent;
+		}
+	}
 };
 
-void GeneticMLPTuning::run(){
+void GeneticMLPTuning::run(float eps){
 	// 1. Evaluating the population
 	GeneticMLPTuning::evaluate();
 
 	// 2. Select the parents for the next generation
-	vector<MLPParameters *> parents = GeneticMLPTuning::select_parents();
+	vector<MLPParameters *> parents = GeneticMLPTuning::select_parents("max");
 
 	// 3. Crossing over
 	GeneticMLPTuning::crossover(parents);
@@ -257,6 +338,15 @@ void GeneticMLPTuning::run(){
 	GeneticMLPTuning::mutate();
 
 	// 5. Checking the convergence
+ 	cout << t1 << ' ' << t0 << ' ' << abs(t1-t0) << ' ' << eps << '\n';
+ 	if(abs(t1 - t0) < eps){
+ 		cout << "Best architecture:\n";
+ 		cout << "\t" << parents[0]->layers << ' ' << parents[0]->activation_function << '\n';
+ 		return;
+ 	}
+ 	t0 = t1;
+	epoch += 1;
+ 	run(eps);
 };
 
 void GeneticMLPTuning::configuration(){
@@ -268,6 +358,7 @@ void GeneticMLPTuning::configuration(){
 	cout << "| Activation Options:\n" ;
 	for(int i = 0 ; i < (int) activation_functions.size(); i++)
 		cout << "| | " << activation_functions[i] << '\n';
+	cout << "|#########################\n\n";
 }
 
 void GeneticMLPTuning::show_population(){
@@ -279,4 +370,5 @@ void GeneticMLPTuning::show_population(){
 		cout << population[i]->layers[population[i]->layers.size()-1];
 		cout << " (" << population[i]->activation_function << ")\n";
 	}
+	cout << "|#########################\n\n";
 }

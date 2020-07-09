@@ -15,6 +15,7 @@ struct MLPParameters {
 class GeneticMLPTuning {
 	
 	MLPParameters current_archtecture;
+	int epoch;
 	int input_layer_size, output_layer_size;
 	int min_layers, max_layers;
 	int min_neurons, max_neurons;
@@ -26,6 +27,7 @@ class GeneticMLPTuning {
 
 	vector<MLPParameters *> population;
 	float *fitness;
+	float t0, t1;
 
 	public:
 
@@ -48,11 +50,11 @@ class GeneticMLPTuning {
 		vector<string> get_activation_options();
 
 		void init_population();
-		vector<MLPParameters *> select_parents();
+		vector<MLPParameters *> select_parents(string type);
 		void evaluate();
 		void crossover(vector<MLPParameters *> parents);
 		void mutate();
-		void run();
+		void run(float eps);
 
 		void configuration();
 		void show_population();
