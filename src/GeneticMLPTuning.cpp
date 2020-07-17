@@ -3,6 +3,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include <unistd.h>
 
@@ -195,16 +196,23 @@ void GeneticMLPTuning::crossover(vector<MLPParameters *> parents){
 	population.clear();
 
 	for (int i = 0 ; i < population_size - 2; i++){
+		unsigned int microseconds = 100000;
+		usleep(microseconds);
+
 		MLPParameters *agent = new MLPParameters;
 
 		// building the layer architecture
 		int head1 = parents[0]->nlayers;
 		int head2 = parents[1]->nlayers;
-		while(head1+(parents[0]->nlayers/2) > parents[0]->nlayers or
-		 head2+(parents[1]->nlayers/2) > parents[1]->nlayers){
+		while(head1+(parents[0]->nlayers/2) > parents[0]->nlayers-1 or
+		 head2+(parents[1]->nlayers/2) > parents[1]->nlayers-1){
 			head1 = rand() % parents[0]->nlayers;
+			usleep(microseconds);
 			head2 = rand() % parents[1]->nlayers;
+			usleep(microseconds);
 		}
+		head1 += 1;
+		head2 += 1;
 
 		agent->nlayers = 0;
 		agent->layers = to_string(input_layer_size);
@@ -339,6 +347,15 @@ void GeneticMLPTuning::run(float eps){
 
 	// 5. Checking the convergence
  	cout << t1 << ' ' << t0 << ' ' << abs(t1-t0) << ' ' << eps << '\n';
+
+
+	// a. plotting the fitness curve
+	string command = "python3 src/plot.py ";
+	ostringstream ss;
+	ss << t0;
+	command += ss.str();
+	system(command.c_str());
+
  	if(abs(t1 - t0) < eps){
  		cout << "Best architecture:\n";
  		cout << "\t" << parents[0]->layers << ' ' << parents[0]->activation_function << '\n';
@@ -346,6 +363,7 @@ void GeneticMLPTuning::run(float eps){
  	}
  	t0 = t1;
 	epoch += 1;
+
  	run(eps);
 };
 

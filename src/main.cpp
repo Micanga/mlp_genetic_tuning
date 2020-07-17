@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>  
 #include <string>
 #include <vector>
 
@@ -14,11 +15,11 @@ int main(){
 
 	// 1. Defining the tuner
 	cout << "Initialising the tuner\n";
-	GeneticMLPTuning tuner(200,30,0.1);
+	GeneticMLPTuning tuner(200,10,0.2);
 	tuner.set_input_layer_size(4);
 	tuner.set_output_layer_size(1);
-	tuner.set_layer_range(2, 4);
-	tuner.set_neurons_range(2, 8);
+	tuner.set_layer_range(2, 6);
+	tuner.set_neurons_range(2, 10);
 	tuner.set_activation_options(options);
 
 	// 2. Printing the tuner parameters
@@ -30,7 +31,8 @@ int main(){
 	//tuner.show_population();
 
 	// 4. Running the Genetic Algorithm Tuner
-	tuner.run(0.001);
+	ofstream outfile ("fitness.csv");
+	tuner.run(0.00001);
 
 	return 0;
 }

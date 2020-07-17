@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.datasets import load_iris
 from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
 import sys
 
 if len(sys.argv) < 3:
@@ -11,6 +12,8 @@ if len(sys.argv) < 3:
 
 iris = load_iris()
 X, y = iris['data'], iris['target']
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
 
 parsed = sys.argv[1].split(',')
 hls = tuple([int(s) for s in parsed])
