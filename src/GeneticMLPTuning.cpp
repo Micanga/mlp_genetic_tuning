@@ -9,7 +9,6 @@
 
 #include "GeneticMLPTuning.h"
 
-
 using namespace std;
 
 GeneticMLPTuning::GeneticMLPTuning(int max_e, int pop_size){
